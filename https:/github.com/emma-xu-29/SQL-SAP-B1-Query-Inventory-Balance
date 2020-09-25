@@ -1,0 +1,17 @@
+Declare @FromDate Datetime
+Declare @ToDate Datetime
+select @FromDate = min(S0.Docdate) from dbo.OINM S0 where S0.Docdate >='[%0]'
+select @ToDate = max(S1.Docdate) from dbo.OINM s1 where S1.Docdate <='[%1]'
+select a.Warehouse as 'Warehouse', a.Itemcode, max(a.Dscription) as ItemName,
+ (sum(a.OpeningBalance) + sum(a.Move)) as Closing,
+(Select i.ItmsGrpCod from OITM i where i.ItemCode=a.Itemcode) as ItemGroup
+from( Select N1.Warehouse, N1.Itemcode, N1.Dscription, (sum(N1.TransValue)) as OpeningBalance, 0 as Move From dbo.OINM N1
+Where N1.DocDate < @FromDate Group By N1.Warehouse,N1.ItemCode,N1.Dscription 
+Union All 
+select N1.Warehouse, N1.Itemcode, N1.Dscription, 0 as OpeningBalance,  sum(N1. TransValue) as Move
+From dbo.OINM N1 
+Where N1.DocDate >= @FromDate and N1.DocDate <=@ToDate 
+Group By N1.Warehouse,N1.ItemCode,N1.Dscription) a, dbo.OITM I1
+where a.ItemCode=I1.ItemCode 
+Group By a.Warehouse, a.Itemcode 
+Order By a.Warehouse, a.Itemcode
